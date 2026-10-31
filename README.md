@@ -24,7 +24,7 @@ doas sh install.sh
 
 ## Manual
 ```
-git clone https://git.disroot.org/SrTortugardo/ccover.git
+git clone https://github.com/polmacarnii/ccover.git
 cd ccover
 ```
 ### ccover
