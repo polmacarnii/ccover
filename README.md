@@ -8,9 +8,9 @@ Display the cover of the song you're listening on your terminal!
 > Not too stable at the moment, expect bugs!
 
 ## lyrics.sh 
-This is a Script made for displaying lyrics of the song you're listeing
+This is a Script made for displaying lyrics of the song you're listening
 > [!NOTE]
-> The lyrics.sh script **only works if theres a .lrc file**
+> The lyrics.sh script **only works if there's a .lrc file**
 
 # How to install
 ## Script
@@ -37,7 +37,7 @@ It will produce a binary called "ccover".
 it does not need to be compiled because its an script, the script is at ```src/lyrics.sh```
 
 ## install
-Now its your turn to move the binarys to wherever you want to
+Now its your turn to move the binaries to wherever you want to
 
 # Dependencies
 ## Build Dependencies
@@ -52,10 +52,10 @@ Now its your turn to move the binarys to wherever you want to
 
 ## Runtime dependencies for lyrics.
 - sh 
-- system utils
+- basic POSIX utilities
 - gawk
 
 # Compatibility
-- GNU/Linux (x86_64 & aarch64) -> Working
-- MacOS X (aarch64) -> Working
+- Linux (x86_64 & aarch64) -> Working
+- MacOS (aarch64) -> Working
 However, if you system has all the Dependencies the most probable thing is that it would work
