@@ -6,6 +6,7 @@
 #include "proc.h"
 #include "terminal.h"
 
-int extract_and_resize(const char *audio, const char *raw, const char *cover);
+int extract_and_resize(const char *audio, const char *raw, const char *cover,
+                       int *image_size);
 
 #endif

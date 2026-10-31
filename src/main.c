@@ -5,6 +5,7 @@
 #include "disk.h"
 #include "draw.h"
 #include "proc.h"
+#include <locale.h>
 #include <signal.h>
 
 /* Variables */
@@ -50,9 +51,10 @@ static void kitty_clear(void) {
   run_exec(argv, 1);
 }
 
-static void cleanup(void) {
+static void cleanup(const char *cover) {
   kitty_clear();
-  clear_dir(cache_dir);
+  if (cover && cover[0])
+    unlink(cover);
   rmdir(cache_dir);
   printf("\033[2J\033[H");
 }
@@ -76,20 +78,29 @@ int main(void) {
   struct Song song = {0};
   struct Song prev = {0};
 
-  char raw[PATH_MAX];
-  char cover[PATH_MAX];
+  char raw[PATH_MAX] = {0};
+  char cover[PATH_MAX] = {0};
+
+  setlocale(LC_CTYPE, "");
 
   if (setup() != 0)
     return 1;
 
   int counter = 0;
+  int no_song_shown = 0;
+
   while (running) {
     read_cmus(&song);
     if (!song.file[0]) {
-      no_song();
+      if (!no_song_shown) {
+        no_song();
+        no_song_shown = 1;
+      }
       wait_update();
       continue;
     }
+
+    no_song_shown = 0;
 
     if (song_changed(&song, &prev)) {
       clear_screen();
@@ -108,6 +119,6 @@ int main(void) {
     wait_update();
   }
 
-  cleanup();
+  cleanup(cover);
   return 0;
 }

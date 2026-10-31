@@ -18,6 +18,16 @@ int terminal_cols(void) {
   return 80;
 }
 
+int terminal_cell_height(void) {
+  struct winsize ws;
+
+  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_row > 0 &&
+      ws.ws_ypixel > 0)
+    return ws.ws_ypixel / ws.ws_row;
+
+  return 0;
+}
+
 void clear_screen(void) {
   printf("\033[3J\033[2J\033[H");
   fflush(stdout);

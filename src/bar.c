@@ -1,4 +1,60 @@
+#define _XOPEN_SOURCE 700
 #include "bar.h"
+#include <wchar.h>
+
+#define INFO_PREFIX_WIDTH 2
+
+static int clamp_row(int row, int rows) {
+  if (row < 1)
+    return 1;
+  if (row > rows)
+    return rows;
+  return row;
+}
+
+static size_t copy_to_width(const char *src, char *dst, size_t dstsz,
+                            size_t max_width) {
+  mbstate_t st;
+  size_t width = 0;
+  size_t out = 0;
+
+  if (dstsz == 0)
+    return 0;
+
+  memset(&st, 0, sizeof(st));
+
+  while (*src && out + 1 < dstsz) {
+    wchar_t wc;
+    size_t n = mbrtowc(&wc, src, MB_CUR_MAX, &st);
+    size_t cw;
+
+    if (n == (size_t)-1 || n == (size_t)-2) {
+      memset(&st, 0, sizeof(st));
+      if (width + 1 > max_width)
+        break;
+      dst[out++] = *src++;
+      width++;
+      continue;
+    }
+
+    if (n == 0)
+      break;
+
+    int w = wcwidth(wc);
+    cw = w > 0 ? (size_t)w : 0;
+
+    if (width + cw > max_width || out + n >= dstsz)
+      break;
+
+    memcpy(dst + out, src, n);
+    out += n;
+    src += n;
+    width += cw;
+  }
+
+  dst[out] = '\0';
+  return width;
+}
 
 static int read_progress(struct Progress *p) {
   if (!p)
@@ -53,9 +109,9 @@ static void draw_progress_bar(const struct Progress *p) {
       else
         printf("─");
     }
-
-    printf("]");
   }
+
+  printf("]");
 }
 
 static void format_progress_time(const struct Progress *p, char *buf,
@@ -79,19 +135,29 @@ void print_info_and_bar(const char *title, const char *artist) {
 
   struct Progress progress;
   char time[32];
-  int base_row = rows - 4;
+  char tbuf[BUFFER];
+  char abuf[BUFFER];
+  size_t max_width =
+      cols > INFO_PREFIX_WIDTH ? (size_t)(cols - INFO_PREFIX_WIDTH) : 0;
+  size_t tw = copy_to_width(t, tbuf, sizeof(tbuf), max_width);
+  size_t aw = copy_to_width(a, abuf, sizeof(abuf), max_width);
+  int base_row = clamp_row(rows - 4, rows);
 
-  printf("\033[%d;%dH\033[K %s", base_row, center(cols, strlen(t)), t);
-  printf("\033[%d;%dH\033[K󰠃 %s", base_row + 1, center(cols, strlen(a)), a);
+  printf("\033[%d;%dH\033[K %s", base_row,
+         center(cols, (int)tw + INFO_PREFIX_WIDTH), tbuf);
+  printf("\033[%d;%dH\033[K󰠃 %s", clamp_row(base_row + 1, rows),
+         center(cols, (int)aw + INFO_PREFIX_WIDTH), abuf);
 
   if (read_progress(&progress) == 0) {
-    printf("\033[%d;%dH\033[K", rows - 2, center(cols, BAR_WIDTH + 2));
+    printf("\033[%d;%dH\033[K", clamp_row(rows - 2, rows),
+           center(cols, BAR_WIDTH + 2));
 
     draw_progress_bar(&progress);
 
     format_progress_time(&progress, time, sizeof(time));
 
-    printf("\033[%d;%dH\033[K%s", rows - 1, center(cols, strlen(time)), time);
+    printf("\033[%d;%dH\033[K%s", clamp_row(rows - 1, rows),
+           center(cols, (int)strlen(time)), time);
   }
 
   fflush(stdout);

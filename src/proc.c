@@ -29,6 +29,14 @@ int capture_exec(char *const argv[], char *buf, size_t size) {
     close(pipefd[0]);
     dup2(pipefd[1], STDOUT_FILENO);
     close(pipefd[1]);
+
+    int fd = open("/dev/null", O_WRONLY);
+    if (fd != -1) {
+      dup2(fd, STDERR_FILENO);
+      if (fd > STDERR_FILENO)
+        close(fd);
+    }
+
     execvp(argv[0], argv);
     _exit(127);
   }
@@ -36,18 +44,39 @@ int capture_exec(char *const argv[], char *buf, size_t size) {
   close(pipefd[1]);
 
   size_t total = 0;
-  ssize_t n;
+  char discard[512];
 
-  while (total + 1 < size &&
-         (n = read(pipefd[0], buf + total, size - 1 - total)) > 0)
-    total += (size_t)n;
+  for (;;) {
+    ssize_t n;
+    char *dst = total + 1 < size ? buf + total : discard;
+    size_t dstsz = total + 1 < size ? size - 1 - total : sizeof(discard);
+
+    n = read(pipefd[0], dst, dstsz);
+    if (n == 0)
+      break;
+    if (n < 0) {
+      if (errno == EINTR)
+        continue;
+      break;
+    }
+
+    if (dst == buf + total)
+      total += (size_t)n;
+  }
 
   close(pipefd[0]);
 
   int status = 0;
-  waitpid(pid, &status, 0);
+  if (waitpid(pid, &status, 0) == -1) {
+    buf[total] = '\0';
+    return -1;
+  }
 
   buf[total] = '\0';
+
+  if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+    return -1;
+
   return 0;
 }
 

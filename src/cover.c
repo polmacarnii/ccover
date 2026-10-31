@@ -1,8 +1,9 @@
 #include "cover.h"
 
 static int extract_cover(const char *audio, const char *output) {
-  char *argv[] = {"ffmpeg", "-y", "-i",   (char *)audio,  "-map",
-                  "0:v:0",  "-c", "copy", (char *)output, NULL};
+  char *argv[] = {"ffmpeg", "-y",    "-i",           (char *)audio,
+                  "-map",   "0:v:0", "-frames:v",    "1",
+                  "-c",     "copy",  (char *)output, NULL};
 
   if (run_exec(argv, 1) != 0)
     return -1;
@@ -35,7 +36,8 @@ static int find_cover(const char *audio, const char *output) {
   return -1;
 }
 
-static int resize_cover(const char *input, const char *output) {
+static int resize_cover(const char *input, const char *output,
+                        int *image_size) {
   char vf[256];
   int img_size;
   int rows = terminal_rows();
@@ -51,13 +53,16 @@ static int resize_cover(const char *input, const char *output) {
   else
     img_size = 850;
 
+  if (image_size)
+    *image_size = img_size;
+
   snprintf(vf, sizeof(vf),
            "scale=%d:%d:force_original_aspect_ratio=decrease,"
            "pad=%d:%d:(ow-iw)/2:(oh-ih)/2",
            img_size, img_size, img_size, img_size);
 
-  char *argv1[] = {"ffmpeg", "-y",      "-i",   (char *)input,  "-vf",
-                   vf,       "-format", "jpeg", (char *)output, NULL};
+  char *argv1[] = {"ffmpeg", "-y",   "-i",    (char *)input,  "-vf",
+                   vf,       "-c:v", "mjpeg", (char *)output, NULL};
 
   if (run_exec(argv1, 1) == 0 && file_exists(output))
     return 0;
@@ -68,19 +73,26 @@ static int resize_cover(const char *input, const char *output) {
   if (run_exec(argv2, 1) != 0)
     return -1;
 
-  return img_size;
+  return 0;
 }
 
-int extract_and_resize(const char *audio, const char *raw, const char *cover) {
+int extract_and_resize(const char *audio, const char *raw, const char *cover,
+                       int *image_size) {
   if (!audio || !raw || !cover)
     return -1;
 
-  if (extract_cover(audio, raw) != 0)
-    if (find_cover(audio, raw) != 0)
-      return -1;
+  if (image_size)
+    *image_size = 0;
 
-  if (resize_cover(raw, cover) != 0) {
+  if (extract_cover(audio, raw) != 0)
+    if (find_cover(audio, raw) != 0) {
+      unlink(raw);
+      return -1;
+    }
+
+  if (resize_cover(raw, cover, image_size) != 0) {
     unlink(raw);
+    unlink(cover);
     return -1;
   }
 

@@ -8,36 +8,20 @@ Display the cover of the song you're listening on your terminal!
 > Not too stable at the moment, expect bugs!
 
 ## lyrics.sh 
+![lyrics](assets/lyrics.png)
 This is a Script made for displaying lyrics of the song you're listening
 > [!NOTE]
 > The lyrics.sh script **only works if there's a .lrc file**
 
 # How to install
-## Script
 ```
-git clone https://git.disroot.org/SrTortugardo/ccover.git
+git clone https://github.com/polmacarnii/ccover.git
 cd ccover
+make
 doas sh install.sh
 ```
 > [!NOTE]
 > If you use *sudo* instead of *doas*, change it
-
-## Manual
-```
-git clone https://github.com/polmacarnii/ccover.git
-cd ccover
-```
-### ccover
-Now, there is an script called "build.sh", for compile do :
-```
-sh build.sh
-```
-It will produce a binary called "ccover". 
-### lyrics.sh 
-it does not need to be compiled because its an script, the script is at ```src/lyrics.sh```
-
-## install
-Now its your turn to move the binaries to wherever you want to
 
 # Dependencies
 ## Build Dependencies
